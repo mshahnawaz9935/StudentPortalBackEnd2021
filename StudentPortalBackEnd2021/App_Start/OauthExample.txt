@@ -1,0 +1,178 @@
+﻿Uppili Vasanthi
+14 Followers
+About
+Follow
+
+Sign in
+
+https://medium.com/@uppilivasanthi/web-api-token-based-authentication-using-microsoft-owin-77ab0645f156
+Get started
+
+
+Web API Token Based Authentication using Microsoft OWIN
+Uppili Vasanthi
+Uppili Vasanthi
+
+Jul 8, 2019·5 min read
+
+
+What is Token based Authentication?
+Web API is a service which can be accessed over the HTTP by any client. So, providing security to the Web API is very important, which can be easily done with the process called Token based authentication.
+Token authentication is a form of “two-factor authentication”, meaning users must supply two unique factors when logging in. The first factor is something the user knows, like a password or PIN. The second factor is provided by an Authenticator, a hardware or software “token” with a code that changes randomly.
+How Token Based Authentication works?
+
+Fig: Control Flow of Token based Authentication
+A token is a piece of data which is created by server, and contains enough data to identify a particular user and it has expiry time. The client application first sends a request to Authentication server with valid credentials. Authentication server sends an Access token to the client as a response. The client application then uses the token to access the restricted resources in next requests, till the token is valid. If the Access token is expired, then client application can request for new access token by using Refresh token.
+What is Microsoft OWIN?
+OWIN (Open Web Interface for .NET) is a standard for an interface between .NET Web applications and Web servers. It is a community-owned open-source project. The OAuth authorization framework enables a third-party application to obtain limited access to a HTTP service. The primary goal of OWIN is to decouple the server and application, encouraging development of small and focused application components that are part of the processing pipeline through which the server can route incoming HTTP requests.
+How to implement Token based Authentication?
+Step 1: Create a new project by following the below steps:
+Open Visual Studio 2017 and go to File -> New -> Project. Choose “ASP.NET Web Application”. Provide the name like “UserAuthentication” and click OK. The next window will provide you options to choose web application template. Here, you need to choose Web API with No Authentication and click OK. Now the project is created successfully.
+
+
+Step 2: Install NuGet Packages:
+To implement the token-based authentication, “Microsoft Owin” is responsible for regenerating and verifying the tokens. We have to install the required NuGet packages, right click on References in solution and select Manage NuGet Packages. Add the below packages:
+· Microsoft.Owin.Security.OAuth
+· Microsoft.AspNet.Identity.Owin
+· Microsoft.Owin.Cors
+· Microsoft.AspNet.WebApi.Cors
+· Microsoft.Owin.Host.SystemWeb
+Here the “Microsoft.AspNet.Identity.Owin” package provides many useful extensions and also downloads dependency packages. “Microsoft.Owin.Security.OAuth” package is required to support any standard OAuth 2.0 authentication workflow. “Microsoft.Owin.Host.SystemWeb” package contains the types related to handle OWIN requests. It helps us to run OWIN-based applications on IIS using the ASP.NET request pipeline.
+
+Step 3: Add ‘Startup.cs’ inside the ‘App_Start’ folder:
+
+Then, add the following code to the Startup.cs Class file.
+public void Configuration(IAppBuilder app)
+{
+  // For more information on how to configure your application, //visit http://go.microsoft.com/fwlink/?LinkID=316888
+app.UseCors(CorsOptions.AllowAll);
+OAuthAuthorizationServerOptions option = new OAuthAuthorizationServerOptions
+{
+  
+  TokenEndpointPath = new PathString("/token"),
+  Provider = new ApplicationAuthProvider(),                                                AccessTokenExpireTimeSpan = TimeSpan.FromMinutes(60),
+  AllowInsecureHttp = true
+};
+app.UseOAuthAuthorizationServer(option);
+app.UseOAuthBearerAuthentication(new OAuthBearerAuthenticationOptions());
+}
+
+Fig: Startup.cs class
+In the above code, OWIN works as a middleware in the application, which process your incoming request and validate it. Here we are using a class named with “ApplicationAuthProvider” which validate the user based on their credentials.
+Step 4: Create ApplicationAuthProvider.cs Class
+[EnableCors(origins: "*", headers: "*", methods: "*")]
+public class ApplicationAuthProvider : OAuthAuthorizationServerProvider
+{
+  public override async Task ValidateClientAuthentication(OAuthValidateClientAuthenticationContext context)
+  {
+     context.Validated();
+  }
+ public override async Task GrantResourceOwnerCredentials(OAuthGrantResourceOwnerCredentialsContext context)
+ {
+    AuthRepository authRepository = new AuthRepository();
+    bool Valid = authRepository.ValidateUser(context.UserName,
+    context.Password);
+    if (Valid)
+    {
+       var identity = new        ClaimsIdentity(context.Options.AuthenticationType);
+identity.AddClaim(new Claim("Username", context.UserName));
+identity.AddClaim(new Claim("Password", context.Password));
+        context.Validated(identity);
+    }
+  else
+  {
+    context.SetError("invalid_grant", "The user name or password is      incorrect.");
+    return;
+  }
+}
+}
+
+Fig: ApplicationAuthProvider.cs
+In “AuthRepository” class, we should validate the user’s credentials from the application’s database. We can connect the database into the application using ADO.NET Entity Data Model.
+Step 5: Create an API Controller
+[Authorize]
+public class ClientsController : ApiController
+{
+   MTLLCEntities db = new MTLLCEntities();
+   #region Get Clients
+   [HttpGet]
+   [Route("api/GetClients")]
+   public IHttpActionResult GetAllClients()
+   {
+      //Logic
+   }
+}
+We need to use ‘Authorize’ key at the top of the controller, so that every Method in the controller is restricted.
+If we need to provide authorization to only particular method, then we need to add ‘Authorize’ key at the top of the Method.
+Step 6: Test the API Service
+To test the API call, we need to use ‘Postman’ client. Open Postman and choose GET method and provide the API URL and click ‘Send’. The request will be denied by the server.
+
+Fig: Testing the API Call
+We need to generate the Access Token and pass it in the Headers section to retrieve the Output data.
+Step 7: Generate Access Token
+For generating the Access Token, choose POST method and provide the API URL. In the body section, provide valid credentials with ‘x-www-form-urlencoded’ and click ‘Send’.
+
+Fig: Generating Access Token
+Call the same API and pass the Access token in Headers section using “Authorization” key. Token should be passed followed by “bearer access_token” and click ‘Send’. The output is displayed as shown below in the image.
+
+Fig : Output Screen
+Conclusion: In this post, we have seen how to implement Token Based Authentication in Web API. It provides security to the Web API’s from the unauthorized users. Hope this post helps you.
+Uppili Vasanthi
+Associate Trainee- MouriTech
+
+Follow
+
+29
+
+
+2
+
+29
+
+
+2
+
+
+API
+Web Api Token
+Token
+Owin
+More from Uppili Vasanthi
+Follow
+
+Associate Trainee- MouriTech
+
+More From Medium
+How to livestream your Meetup for free as events become virtual
+Jonathan Beri
+
+Using a custom trust store with RestTemplate in Spring Boot
+Geoff Bourne
+
+Create Custom AMP for your WordPress News Site
+Voodal in Voodal
+
+5 Myths About Coding, and Why Coding IS For You
+Evan Winston in Irrelevant Code
+
+Fundamentals of Python — Conditionals and Loops
+Danil Nagy in Generative Design
+
+Microservices for Non-Technical Managers
+Liviu Ciulinaru
+
+Why I switched From macOS to Windows (For developer reasons)
+Hüseyin Serkan Özaydin
+
+File backup in AWS S3 Bucket using Jenkins Job
+Arun Kumar Singh in TechBull
+
+About
+
+Write
+
+Help
+
+Legal
+
+To make Medium work, we log user data. By using Medium, you agree to our Privacy Policy, including cookie policy.
